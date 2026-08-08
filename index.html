@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ga-Rankuwa YMCA Attendance & Management</title>
+    <script>
+      (function() {
+        function suppressExtensionErrors(e) {
+          const msg = String(e?.message || e?.reason?.message || e?.reason || '').toLowerCase();
+          if (
+            msg.includes('metamask') ||
+            msg.includes('ethereum') ||
+            msg.includes('failed to connect') ||
+            msg.includes('user rejected') ||
+            msg.includes('provider')
+          ) {
+            if (e.preventDefault) e.preventDefault();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            return true;
+          }
+        }
+        window.addEventListener('unhandledrejection', suppressExtensionErrors, true);
+        window.addEventListener('error', suppressExtensionErrors, true);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

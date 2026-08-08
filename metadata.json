@@ -1,0 +1,11 @@
+{
+  "name": "Ga-Rankuwa YMCA Attendance",
+  "description": "Geofenced & QR code attendance system for Ga-Rankuwa YMCA with employee profile management, face scan verification, notes, real-time manager dashboard, and daily report analytics.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
