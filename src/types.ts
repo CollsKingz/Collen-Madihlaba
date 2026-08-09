@@ -86,6 +86,9 @@ export interface AttendanceRecord {
     lat: number;
     lng: number;
   };
+  latitude?: number;
+  longitude?: number;
+  method?: string;
   geofenceDistanceMeters: number;
   withinGeofence: boolean;
   facePhotoUrl: string; // Base64 or image URL captured during check-in
@@ -122,6 +125,7 @@ export interface EmployeeWorkReport {
   employeeName: string;
   employeeDepartment: string;
   timestamp: string; // ISO string
+  submittedAt?: string;
   reportType?: 'daily_shift' | 'outing_field_work';
   outingDestination?: string; // Location visited during outing
   arrivalTime?: string; // Arrival time at outing location
@@ -202,7 +206,8 @@ export interface MeetingSession {
 }
 
 export interface FullSystemBackupData {
-  exportDate: string;
+  exportDate?: string;
+  exportedAt?: string;
   exportedBy: string;
   version: string;
   employees: Employee[];

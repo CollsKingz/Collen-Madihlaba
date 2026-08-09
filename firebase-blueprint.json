@@ -1,0 +1,144 @@
+{
+  "entities": {
+    "Employee": {
+      "title": "Employee",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "department": { "type": "string" },
+        "pin": { "type": "string" },
+        "password": { "type": "string" },
+        "faceTemplate": { "type": "string" },
+        "qrCode": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "idCardNumber": { "type": "string" }
+      },
+      "required": ["id", "name", "role", "department"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "department": { "type": "string" },
+        "type": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "locationName": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "geofenceVerified": { "type": "boolean" },
+        "status": { "type": "string" },
+        "photo": { "type": "string" },
+        "verificationMethod": { "type": "string" },
+        "notes": { "type": "string" },
+        "meetingId": { "type": "string" },
+        "meetingTitle": { "type": "string" }
+      },
+      "required": ["id", "employeeId", "employeeName", "type", "timestamp", "status"]
+    },
+    "Department": {
+      "title": "Department",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Geofence": {
+      "title": "Geofence",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "radius": { "type": "number" },
+        "address": { "type": "string" },
+        "department": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["id", "name", "latitude", "longitude", "radius"]
+    },
+    "WorkReport": {
+      "title": "WorkReport",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "department": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "submittedAt": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "employeeId", "employeeName", "submittedAt"]
+    },
+    "PrivilegeRequest": {
+      "title": "PrivilegeRequest",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "requesterId": { "type": "string" },
+        "requesterName": { "type": "string" },
+        "requestedRole": { "type": "string" },
+        "reason": { "type": "string" },
+        "status": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "requesterId", "requesterName", "requestedRole", "status", "timestamp"]
+    },
+    "Meeting": {
+      "title": "Meeting",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "code": { "type": "string" },
+        "qrCode": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "department": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "description": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["id", "title", "code", "startTime", "endTime"]
+    }
+  },
+  "firestore": {
+    "employees/{employeeId}": {
+      "schema": "Employee",
+      "description": "Employee accounts and credentials"
+    },
+    "records/{recordId}": {
+      "schema": "AttendanceRecord",
+      "description": "Clock-in and sign-in attendance logs"
+    },
+    "departments/{departmentId}": {
+      "schema": "Department",
+      "description": "List of active departments"
+    },
+    "geofences/{geofenceId}": {
+      "schema": "Geofence",
+      "description": "Geofence boundary locations"
+    },
+    "workReports/{reportId}": {
+      "schema": "WorkReport",
+      "description": "Daily work reports"
+    },
+    "privilegeRequests/{requestId}": {
+      "schema": "PrivilegeRequest",
+      "description": "Role elevation requests"
+    },
+    "meetings/{meetingId}": {
+      "schema": "Meeting",
+      "description": "Scheduled meeting sessions and QR check-ins"
+    }
+  }
+}

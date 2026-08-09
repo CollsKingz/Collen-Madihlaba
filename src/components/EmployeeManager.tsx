@@ -17,6 +17,7 @@ import {
 } from '../utils/storage';
 import { DepartmentManagerModal } from './DepartmentManagerModal';
 import { EmployeeExportModal } from './EmployeeExportModal';
+import { EmployeeIdCardModal } from './EmployeeIdCardModal';
 import { 
   Users, 
   UserPlus, 
@@ -40,7 +41,9 @@ import {
   EyeOff,
   ShieldCheck,
   Settings,
-  Download
+  Download,
+  Award,
+  Printer
 } from 'lucide-react';
 
 export const EmployeeManager: React.FC = () => {
@@ -56,6 +59,7 @@ export const EmployeeManager: React.FC = () => {
   const [exportEmpId, setExportEmpId] = useState<string>('all');
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null);
+  const [idCardEmployee, setIdCardEmployee] = useState<Employee | null>(null);
 
   // Quick Password Modal State
   const [passModalEmployee, setPassModalEmployee] = useState<Employee | null>(null);
@@ -521,15 +525,25 @@ export const EmployeeManager: React.FC = () => {
                 </div>
               </div>
 
-              {/* Action buttons: Export, Edit, Password & Erase */}
-              <div className="mt-5 pt-3 border-t border-slate-800/80 grid grid-cols-4 gap-1">
+              {/* Action buttons: ID Card, Export, Edit, Password & Erase */}
+              <div className="mt-5 pt-3 border-t border-slate-800/80 grid grid-cols-5 gap-1">
+                <button
+                  id={`btn-idcard-${emp.id}`}
+                  onClick={() => setIdCardEmployee(emp)}
+                  className="flex items-center justify-center space-x-1 py-1.5 px-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 hover:text-indigo-100 text-[11px] font-medium border border-indigo-500/40 transition-all cursor-pointer"
+                  title="Print and Download Official Employee Work ID Badge"
+                >
+                  <Award className="w-3 h-3 text-indigo-400" />
+                  <span>ID Card</span>
+                </button>
+
                 <button
                   id={`btn-export-${emp.id}`}
                   onClick={() => {
                     setExportEmpId(emp.id);
                     setIsExportModalOpen(true);
                   }}
-                  className="flex items-center justify-center space-x-1 py-1.5 px-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 hover:text-emerald-200 text-[11px] font-medium border border-emerald-500/30 transition-all cursor-pointer"
+                  className="flex items-center justify-center space-x-1 py-1.5 px-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 hover:text-emerald-200 text-[11px] font-medium border border-emerald-500/30 transition-all cursor-pointer"
                   title="Export reports in all formats (CSV, Excel, JSON, TXT, PDF)"
                 >
                   <Download className="w-3 h-3 text-emerald-400" />
@@ -539,7 +553,7 @@ export const EmployeeManager: React.FC = () => {
                 <button
                   id={`btn-edit-${emp.id}`}
                   onClick={() => openEditModal(emp)}
-                  className="flex items-center justify-center space-x-1 py-1.5 px-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-medium border border-slate-700/50 transition-all cursor-pointer"
+                  className="flex items-center justify-center space-x-1 py-1.5 px-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-medium border border-slate-700/50 transition-all cursor-pointer"
                 >
                   <Edit3 className="w-3 h-3 text-indigo-400" />
                   <span>Edit</span>
@@ -548,7 +562,7 @@ export const EmployeeManager: React.FC = () => {
                 <button
                   id={`btn-pass-${emp.id}`}
                   onClick={() => openQuickPassModal(emp)}
-                  className="flex items-center justify-center space-x-1 py-1.5 px-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 hover:text-indigo-200 text-[11px] font-medium border border-indigo-500/30 transition-all cursor-pointer"
+                  className="flex items-center justify-center space-x-1 py-1.5 px-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 hover:text-indigo-200 text-[11px] font-medium border border-indigo-500/30 transition-all cursor-pointer"
                   title="Manage Employee Profile Password"
                 >
                   <Key className="w-3 h-3 text-indigo-400" />
@@ -558,7 +572,7 @@ export const EmployeeManager: React.FC = () => {
                 <button
                   id={`btn-erase-${emp.id}`}
                   onClick={() => setDeletingEmployee(emp)}
-                  className="flex items-center justify-center space-x-1 py-1.5 px-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 text-[11px] font-medium border border-rose-500/30 transition-all cursor-pointer"
+                  className="flex items-center justify-center space-x-1 py-1.5 px-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 text-[11px] font-medium border border-rose-500/30 transition-all cursor-pointer"
                   title="Erase Employee Profile"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -949,6 +963,15 @@ export const EmployeeManager: React.FC = () => {
         workReports={getWorkReports()}
         initialEmployeeId={exportEmpId}
       />
+
+      {/* Employee Work ID Card Modal (Print & Download PNG/Badge) */}
+      {idCardEmployee && (
+        <EmployeeIdCardModal
+          employee={idCardEmployee}
+          isOpen={!!idCardEmployee}
+          onClose={() => setIdCardEmployee(null)}
+        />
+      )}
 
     </div>
   );
