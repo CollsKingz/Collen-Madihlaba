@@ -274,11 +274,11 @@ export const EmployeeManager: React.FC = () => {
     loadData();
   };
 
-  const handleResetToPublishedZeroStaff = () => {
-    if (window.confirm('Clear all staff profiles and reset system to clean published state (0 staff)? New staff will be required to register with mandatory facial biometrics.')) {
-      saveEmployees([]);
-      setEmployees([]);
-      showToast('Reset staff directory to Published Clean State (0 Staff)!');
+  const handleRestoreDefaultStaff = () => {
+    if (window.confirm('Restore default staff profiles (Collen, Tebogo, Sibusiso)? All registered staff profiles will be safely preserved.')) {
+      resetEmployeesToDefaults();
+      loadData();
+      showToast('Default staff profiles refreshed! All registered profiles preserved.');
     }
   };
 
@@ -385,13 +385,13 @@ export const EmployeeManager: React.FC = () => {
             </label>
 
             <button
-              id="btn-reset-published-state"
-              onClick={handleResetToPublishedZeroStaff}
-              className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 hover:text-rose-200 font-semibold text-xs border border-slate-700 shadow-md transition-all cursor-pointer"
-              title="Reset staff directory to 0 staff (Published Clean State)"
+              id="btn-restore-default-staff"
+              onClick={handleRestoreDefaultStaff}
+              className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white font-semibold text-xs border border-indigo-500/30 shadow-md transition-all cursor-pointer"
+              title="Ensure default staff profiles exist without removing registered staff"
             >
-              <RefreshCw className="w-4 h-4 text-rose-400" />
-              <span>Reset to Published (0 Staff)</span>
+              <RefreshCw className="w-4 h-4 text-indigo-400" />
+              <span>Sync & Restore Default Staff</span>
             </button>
 
             <button

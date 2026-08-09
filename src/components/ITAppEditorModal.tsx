@@ -144,10 +144,10 @@ export const ITAppEditorModal: React.FC<ITAppEditorModalProps> = ({
   };
 
   const handleResetSystemDefaults = () => {
-    if (confirm('CRITICAL: Reset all system records, employees, and geofences back to factory defaults?')) {
+    if (confirm('Sync system records and ensure default profiles exist (all registered staff profiles will be safely preserved)?')) {
       resetStorageToDefaults();
       setEmployees(getEmployees());
-      showToastMsg('System reset to factory defaults.');
+      showToastMsg('System defaults synced. All registered staff profiles preserved.');
       if (onAppUpdated) onAppUpdated();
     }
   };

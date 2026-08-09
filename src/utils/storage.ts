@@ -62,27 +62,126 @@ export const DEFAULT_DEPARTMENTS: string[] = [
   'Community Engagement',
 ];
 
+export const ALL_DEPARTMENT_KEYS = [
+  'departments',
+  'geoface_departments',
+  'geoface_departments_v1',
+  'geoface_departments_v2',
+  'geoface_departments_v3',
+  'geoface_departments_v4',
+  'geoface_departments_v5',
+];
+
+export const ALL_GEOFENCE_KEYS = [
+  'geofences',
+  'geoface_geofences',
+  'geoface_geofences_v1',
+  'geoface_geofences_v2',
+  'geoface_geofences_v3',
+  'geoface_geofences_v4',
+  'geoface_geofences_v5',
+  'geoface_geofences_v6',
+  'geoface_geofences_v7',
+];
+
+export const ALL_RECORD_KEYS = [
+  'records',
+  'geoface_records',
+  'geoface_records_v1',
+  'geoface_records_v2',
+  'geoface_records_v3',
+  'geoface_records_v4',
+  'geoface_records_v5',
+  'geoface_records_v6',
+  'geoface_records_v7',
+];
+
+export const ALL_WORK_REPORT_KEYS = [
+  'work_reports',
+  'geoface_work_reports',
+  'geoface_work_reports_v1',
+  'geoface_work_reports_v2',
+  'geoface_work_reports_v3',
+  'geoface_work_reports_v4',
+  'geoface_work_reports_v5',
+  'geoface_work_reports_v6',
+  'geoface_work_reports_v7',
+];
+
+export const ALL_PRIVILEGE_KEYS = [
+  'privilege_requests',
+  'geoface_privilege_requests',
+  'geoface_privilege_requests_v1',
+  'geoface_privilege_requests_v7',
+];
+
+export const ALL_MEETING_KEYS = [
+  'meetings',
+  'geoface_meetings',
+  'geoface_meetings_v1',
+];
+
 export function getDepartments(): string[] {
-  const data = localStorage.getItem(DEPARTMENTS_KEY);
-  if (!data) {
-    localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(DEFAULT_DEPARTMENTS));
-    return DEFAULT_DEPARTMENTS;
-  }
-  try {
-    const parsed = JSON.parse(data);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
+  const set = new Set<string>();
+
+  // 1. Gather departments from all department keys
+  for (const key of ALL_DEPARTMENT_KEYS) {
+    try {
+      const data = localStorage.getItem(key);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((d) => {
+            if (typeof d === 'string' && d.trim()) set.add(d.trim());
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading department key:', key, e);
     }
-  } catch (e) {
-    console.error('Error reading departments:', e);
   }
-  return DEFAULT_DEPARTMENTS;
+
+  // 2. Include default departments
+  DEFAULT_DEPARTMENTS.forEach((d) => set.add(d.trim()));
+
+  // 3. Include departments assigned to registered employees
+  try {
+    const emps = getEmployees();
+    emps.forEach((emp) => {
+      if (emp.department && emp.department.trim()) {
+        set.add(emp.department.trim());
+      }
+    });
+  } catch (e) {
+    console.warn('Error reading employees for departments:', e);
+  }
+
+  const result = Array.from(set);
+
+  // Sync back to all department keys
+  ALL_DEPARTMENT_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(result));
+    } catch (e) {
+      console.error('Error saving departments:', e);
+    }
+  });
+
+  return result;
 }
 
 export function saveDepartments(departments: string[]): void {
-  const cleaned = departments.map(d => d.trim()).filter(Boolean);
+  const cleaned = departments.map((d) => d.trim()).filter(Boolean);
   const unique = Array.from(new Set(cleaned));
-  localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(unique));
+
+  ALL_DEPARTMENT_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(unique));
+    } catch (e) {
+      console.error('Error saving departments:', e);
+    }
+  });
+
   window.dispatchEvent(new Event('geofence_departments_update'));
   window.dispatchEvent(new Event('geofence_storage_update'));
 }
@@ -187,34 +286,80 @@ export const DEFAULT_PRIVILEGE_REQUESTS: PrivilegeRequest[] = [];
 
 export const DEFAULT_RECORDS: AttendanceRecord[] = [];
 
+export const ALL_EMPLOYEE_KEYS = [
+  'employees',
+  'geoface_employees',
+  'geoface_employees_v1',
+  'geoface_employees_v2',
+  'geoface_employees_v3',
+  'geoface_employees_v4',
+  'geoface_employees_v5',
+  'geoface_employees_v6',
+  'geoface_employees_v7'
+];
+
 export function getEmployees(): Employee[] {
-  const data = localStorage.getItem(EMPLOYEES_KEY);
-  if (!data) {
-    localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(DEFAULT_EMPLOYEES));
-    return DEFAULT_EMPLOYEES;
-  }
-  try {
-    const list: Employee[] = JSON.parse(data);
-    if (!Array.isArray(list) || list.length === 0) {
-      localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(DEFAULT_EMPLOYEES));
-      return DEFAULT_EMPLOYEES;
-    }
-    const validated = list.map((emp) => {
-      if (!emp.password) {
-        const firstName = emp.name.split(' ')[0] || 'User';
-        return { ...emp, password: `${firstName}@2026` };
+  const map = new Map<string, Employee>();
+
+  // 1. Gather stored profiles from all keys in chronological order (oldest to newest)
+  for (const key of ALL_EMPLOYEE_KEYS) {
+    try {
+      const data = localStorage.getItem(key);
+      if (data) {
+        const list: Employee[] = JSON.parse(data);
+        if (Array.isArray(list)) {
+          list.forEach((emp) => {
+            if (emp && emp.id && emp.name) {
+              const validated: Employee = {
+                ...emp,
+                password: emp.password || `${emp.name.split(' ')[0] || 'User'}@2026`,
+              };
+              const existing = map.get(emp.id);
+              if (existing) {
+                // Merge so newer key's profile and credentials override older key's profile
+                map.set(emp.id, { ...existing, ...validated });
+              } else {
+                map.set(emp.id, validated);
+              }
+            }
+          });
+        }
       }
-      return emp;
-    });
-    return validated;
-  } catch {
-    localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(DEFAULT_EMPLOYEES));
-    return DEFAULT_EMPLOYEES;
+    } catch (e) {
+      console.warn('Error reading employee key:', key, e);
+    }
   }
+
+  // 2. Only if NO employee profiles exist in ANY storage key, seed with default initial profiles
+  if (map.size === 0) {
+    DEFAULT_EMPLOYEES.forEach((emp) => {
+      map.set(emp.id, emp);
+    });
+  }
+
+  const result = Array.from(map.values());
+
+  // 3. Keep all employee keys in sync with consolidated profiles
+  ALL_EMPLOYEE_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(result));
+    } catch (e) {
+      console.error('Error storing consolidated employees:', e);
+    }
+  });
+
+  return result;
 }
 
 export function saveEmployees(employees: Employee[]): void {
-  localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
+  // Sync to all employee storage keys so switching versions never loses registered profiles
+  ALL_EMPLOYEE_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(employees));
+    } catch (e) {
+      console.error('Error saving employees to key:', key, e);
+    }
+  });
   window.dispatchEvent(new Event('geofence_storage_update'));
 }
 
@@ -263,7 +408,11 @@ export function getCurrentUser(): Employee | null {
   const data = localStorage.getItem(CURRENT_USER_KEY);
   if (!data) return null;
   try {
-    return JSON.parse(data);
+    const user: Employee = JSON.parse(data);
+    if (!user || !user.id) return null;
+    const emps = getEmployees();
+    const latest = emps.find((e) => e.id === user.id || (e.email && user.email && e.email.toLowerCase() === user.email.toLowerCase()));
+    return latest || user;
   } catch {
     return null;
   }
@@ -383,51 +532,124 @@ export function registerEmployeeProfile(
 }
 
 export function getGeofences(): GeofenceLocation[] {
-  const data = localStorage.getItem(GEOFENCES_KEY);
-  if (!data) {
-    localStorage.setItem(GEOFENCES_KEY, JSON.stringify(DEFAULT_GEOFENCES));
-    return DEFAULT_GEOFENCES;
+  const map = new Map<string, GeofenceLocation>();
+
+  // 1. Seed defaults
+  DEFAULT_GEOFENCES.forEach((geo) => map.set(geo.id, geo));
+
+  // 2. Read from all geofence keys
+  for (const key of ALL_GEOFENCE_KEYS) {
+    try {
+      const data = localStorage.getItem(key);
+      if (data) {
+        const list: GeofenceLocation[] = JSON.parse(data);
+        if (Array.isArray(list)) {
+          list.forEach((geo) => {
+            if (geo && geo.id) {
+              const existing = map.get(geo.id);
+              if (existing) {
+                map.set(geo.id, { ...existing, ...geo });
+              } else {
+                map.set(geo.id, geo);
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading geofence key:', key, e);
+    }
   }
-  try {
-    return JSON.parse(data);
-  } catch {
-    return DEFAULT_GEOFENCES;
-  }
+
+  const result = Array.from(map.values());
+
+  ALL_GEOFENCE_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(result));
+    } catch (e) {
+      console.error('Error saving geofences:', e);
+    }
+  });
+
+  return result;
 }
 
 export function saveGeofences(geofences: GeofenceLocation[]): void {
-  localStorage.setItem(GEOFENCES_KEY, JSON.stringify(geofences));
+  ALL_GEOFENCE_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(geofences));
+    } catch (e) {
+      console.error('Error saving geofences:', e);
+    }
+  });
   window.dispatchEvent(new Event('geofence_storage_update'));
 }
 
 export function getAttendanceRecords(): AttendanceRecord[] {
-  const data = localStorage.getItem(RECORDS_KEY);
-  if (!data) {
-    localStorage.setItem(RECORDS_KEY, JSON.stringify(DEFAULT_RECORDS));
-    return DEFAULT_RECORDS;
+  const map = new Map<string, AttendanceRecord>();
+
+  for (const key of ALL_RECORD_KEYS) {
+    try {
+      const data = localStorage.getItem(key);
+      if (data) {
+        const list: AttendanceRecord[] = JSON.parse(data);
+        if (Array.isArray(list)) {
+          list.forEach((rec) => {
+            if (rec && rec.id) {
+              const existing = map.get(rec.id);
+              if (existing) {
+                map.set(rec.id, { ...existing, ...rec });
+              } else {
+                map.set(rec.id, rec);
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading attendance records key:', key, e);
+    }
   }
-  try {
-    return JSON.parse(data);
-  } catch {
-    return DEFAULT_RECORDS;
-  }
+
+  const result = Array.from(map.values()).sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+
+  ALL_RECORD_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(result));
+    } catch (e) {
+      console.error('Error saving attendance records:', e);
+    }
+  });
+
+  return result;
+}
+
+export function saveAttendanceRecords(records: AttendanceRecord[]): void {
+  ALL_RECORD_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(records));
+    } catch (e) {
+      console.error('Error saving attendance records:', e);
+    }
+  });
+  window.dispatchEvent(new Event('geofence_storage_update'));
 }
 
 export function addAttendanceRecord(record: AttendanceRecord): void {
   const current = getAttendanceRecords();
-  const updated = [record, ...current];
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(updated));
-  
+  const updated = [record, ...current.filter((r) => r.id !== record.id)];
+  saveAttendanceRecords(updated);
+
   // Dispatch custom event for real-time manager feed update
   window.dispatchEvent(new CustomEvent('geofence_clock_in_event', { detail: record }));
-  window.dispatchEvent(new Event('geofence_storage_update'));
 }
 
 export function updateRecordStatus(recordId: string, status: AttendanceRecord['status']): void {
   const records = getAttendanceRecords();
   const updated = records.map((r) => (r.id === recordId ? { ...r, status } : r));
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(updated));
-  window.dispatchEvent(new Event('geofence_storage_update'));
+  saveAttendanceRecords(updated);
 }
 
 export function exportRecordsToCSV(records: AttendanceRecord[]): void {
@@ -470,42 +692,80 @@ export function exportRecordsToCSV(records: AttendanceRecord[]): void {
 }
 
 export function resetEmployeesToDefaults(): Employee[] {
-  localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(DEFAULT_EMPLOYEES));
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(DEFAULT_RECORDS));
-  localStorage.setItem(GEOFENCES_KEY, JSON.stringify(DEFAULT_GEOFENCES));
-  localStorage.setItem(WORK_REPORTS_KEY, JSON.stringify(DEFAULT_WORK_REPORTS));
-  localStorage.setItem(PRIVILEGE_REQUESTS_KEY, JSON.stringify(DEFAULT_PRIVILEGE_REQUESTS));
+  const current = getEmployees();
+  const map = new Map<string, Employee>();
+  DEFAULT_EMPLOYEES.forEach((emp) => map.set(emp.id, emp));
+  current.forEach((emp) => map.set(emp.id, emp));
+  const merged = Array.from(map.values());
+  saveEmployees(merged);
   window.dispatchEvent(new Event('geofence_storage_update'));
-  return DEFAULT_EMPLOYEES;
+  return merged;
 }
 
 export const resetStorageToDefaults = resetEmployeesToDefaults;
 
 export function getWorkReports(): EmployeeWorkReport[] {
-  const data = localStorage.getItem(WORK_REPORTS_KEY);
-  if (!data) {
-    localStorage.setItem(WORK_REPORTS_KEY, JSON.stringify(DEFAULT_WORK_REPORTS));
-    return DEFAULT_WORK_REPORTS;
+  const map = new Map<string, EmployeeWorkReport>();
+
+  for (const key of ALL_WORK_REPORT_KEYS) {
+    try {
+      const data = localStorage.getItem(key);
+      if (data) {
+        const list: EmployeeWorkReport[] = JSON.parse(data);
+        if (Array.isArray(list)) {
+          list.forEach((rep) => {
+            if (rep && rep.id) {
+              const existing = map.get(rep.id);
+              if (existing) {
+                map.set(rep.id, { ...existing, ...rep });
+              } else {
+                map.set(rep.id, rep);
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading work reports key:', key, e);
+    }
   }
-  try {
-    return JSON.parse(data);
-  } catch {
-    return DEFAULT_WORK_REPORTS;
-  }
+
+  const result = Array.from(map.values()).sort(
+    (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+  );
+
+  ALL_WORK_REPORT_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(result));
+    } catch (e) {
+      console.error('Error saving work reports:', e);
+    }
+  });
+
+  return result;
+}
+
+export function saveWorkReports(reports: EmployeeWorkReport[]): void {
+  ALL_WORK_REPORT_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(reports));
+    } catch (e) {
+      console.error('Error saving work reports:', e);
+    }
+  });
+  window.dispatchEvent(new Event('geofence_storage_update'));
 }
 
 export function saveWorkReport(report: EmployeeWorkReport): void {
   const current = getWorkReports();
-  const updated = [report, ...current];
-  localStorage.setItem(WORK_REPORTS_KEY, JSON.stringify(updated));
-  window.dispatchEvent(new Event('geofence_storage_update'));
+  const updated = [report, ...current.filter((r) => r.id !== report.id)];
+  saveWorkReports(updated);
 }
 
 export function deleteWorkReport(reportId: string): void {
   const current = getWorkReports();
   const updated = current.filter((r) => r.id !== reportId);
-  localStorage.setItem(WORK_REPORTS_KEY, JSON.stringify(updated));
-  window.dispatchEvent(new Event('geofence_storage_update'));
+  saveWorkReports(updated);
 }
 
 // -------------------------------------------------------------
@@ -513,20 +773,47 @@ export function deleteWorkReport(reportId: string): void {
 // -------------------------------------------------------------
 
 export function getPrivilegeRequests(): PrivilegeRequest[] {
-  const data = localStorage.getItem(PRIVILEGE_REQUESTS_KEY);
-  if (!data) {
-    localStorage.setItem(PRIVILEGE_REQUESTS_KEY, JSON.stringify(DEFAULT_PRIVILEGE_REQUESTS));
-    return DEFAULT_PRIVILEGE_REQUESTS;
+  const map = new Map<string, PrivilegeRequest>();
+
+  for (const key of ALL_PRIVILEGE_KEYS) {
+    try {
+      const data = localStorage.getItem(key);
+      if (data) {
+        const list: PrivilegeRequest[] = JSON.parse(data);
+        if (Array.isArray(list)) {
+          list.forEach((req) => {
+            if (req && req.id) {
+              map.set(req.id, req);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading privilege requests key:', key, e);
+    }
   }
-  try {
-    return JSON.parse(data);
-  } catch {
-    return DEFAULT_PRIVILEGE_REQUESTS;
-  }
+
+  const result = Array.from(map.values());
+
+  ALL_PRIVILEGE_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(result));
+    } catch (e) {
+      console.error('Error saving privilege requests:', e);
+    }
+  });
+
+  return result;
 }
 
 export function savePrivilegeRequests(requests: PrivilegeRequest[]): void {
-  localStorage.setItem(PRIVILEGE_REQUESTS_KEY, JSON.stringify(requests));
+  ALL_PRIVILEGE_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(requests));
+    } catch (e) {
+      console.error('Error saving privilege requests:', e);
+    }
+  });
   window.dispatchEvent(new Event('geofence_storage_update'));
 }
 
@@ -672,7 +959,7 @@ export function updateITApproval(
     const empIdx = employees.findIndex((e) => e.id === updatedReq.requesterId);
     if (empIdx !== -1) {
       employees[empIdx].role = updatedReq.requestedRole;
-      localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
+      saveEmployees(employees);
     }
   }
 
@@ -721,7 +1008,7 @@ export function overrideRequestStatus(
     const empIdx = employees.findIndex((e) => e.id === updatedReq.requesterId);
     if (empIdx !== -1) {
       employees[empIdx].role = updatedReq.requestedRole;
-      localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
+      saveEmployees(employees);
     }
   }
 
@@ -862,26 +1149,56 @@ export const DEFAULT_MEETINGS: MeetingSession[] = [
 ];
 
 export function getMeetings(): MeetingSession[] {
-  const data = localStorage.getItem(MEETINGS_KEY);
-  if (!data) {
-    localStorage.setItem(MEETINGS_KEY, JSON.stringify(DEFAULT_MEETINGS));
-    return DEFAULT_MEETINGS;
-  }
-  try {
-    const parsed: MeetingSession[] = JSON.parse(data);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      localStorage.setItem(MEETINGS_KEY, JSON.stringify(DEFAULT_MEETINGS));
-      return DEFAULT_MEETINGS;
+  const map = new Map<string, MeetingSession>();
+
+  // 1. Seed defaults
+  DEFAULT_MEETINGS.forEach((m) => map.set(m.id, m));
+
+  // 2. Read from all meeting keys
+  for (const key of ALL_MEETING_KEYS) {
+    try {
+      const data = localStorage.getItem(key);
+      if (data) {
+        const list: MeetingSession[] = JSON.parse(data);
+        if (Array.isArray(list)) {
+          list.forEach((m) => {
+            if (m && m.id) {
+              const existing = map.get(m.id);
+              if (existing) {
+                map.set(m.id, { ...existing, ...m });
+              } else {
+                map.set(m.id, m);
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading meetings key:', key, e);
     }
-    return parsed;
-  } catch {
-    localStorage.setItem(MEETINGS_KEY, JSON.stringify(DEFAULT_MEETINGS));
-    return DEFAULT_MEETINGS;
   }
+
+  const result = Array.from(map.values());
+
+  ALL_MEETING_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(result));
+    } catch (e) {
+      console.error('Error saving meetings:', e);
+    }
+  });
+
+  return result;
 }
 
 export function saveMeetings(meetings: MeetingSession[]): void {
-  localStorage.setItem(MEETINGS_KEY, JSON.stringify(meetings));
+  ALL_MEETING_KEYS.forEach((key) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(meetings));
+    } catch (e) {
+      console.error('Error saving meetings:', e);
+    }
+  });
   window.dispatchEvent(new Event('geofence_meetings_update'));
   window.dispatchEvent(new Event('geofence_storage_update'));
 }
