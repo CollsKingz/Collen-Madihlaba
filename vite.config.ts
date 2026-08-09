@@ -13,29 +13,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    chunkSizeWarningLimit: 1600,
-    rollupOptions: {
-      external: [
-        'express',
-        'dotenv',
-        'path',
-        'fs',
-        'url',
-        'http',
-        'https',
-        'crypto',
-        'os',
-        'child_process',
-      ],
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          lucide: ['lucide-react'],
-          recharts: ['recharts'],
-          motion: ['motion'],
-        },
-      },
-    },
+    chunkSizeWarningLimit: 2000,
   },
   server: {
     hmr: process.env.DISABLE_HMR !== 'true',

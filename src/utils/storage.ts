@@ -14,7 +14,7 @@ import {
   onSnapshot,
   deleteDoc
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 
 const EMPLOYEES_KEY = 'geoface_employees_v7';
 const GEOFENCES_KEY = 'geoface_geofences_v7';
@@ -236,16 +236,24 @@ async function saveToFirestoreDoc(collectionName: string, docId: string, data: a
   try {
     const clean = sanitizeForFirestore(data);
     await setDoc(doc(db, collectionName, docId), clean, { merge: true });
-  } catch (err) {
-    console.warn(`Firestore save error [${collectionName}/${docId}]:`, err);
+  } catch (err: any) {
+    if (err?.code === 'permission-denied' || err?.message?.includes('insufficient permissions')) {
+      handleFirestoreError(err, OperationType.WRITE, `${collectionName}/${docId}`);
+    } else {
+      console.warn(`Firestore save error [${collectionName}/${docId}]:`, err);
+    }
   }
 }
 
 async function removeFromFirestoreDoc(collectionName: string, docId: string) {
   try {
     await deleteDoc(doc(db, collectionName, docId));
-  } catch (err) {
-    console.warn(`Firestore delete error [${collectionName}/${docId}]:`, err);
+  } catch (err: any) {
+    if (err?.code === 'permission-denied' || err?.message?.includes('insufficient permissions')) {
+      handleFirestoreError(err, OperationType.DELETE, `${collectionName}/${docId}`);
+    } else {
+      console.warn(`Firestore delete error [${collectionName}/${docId}]:`, err);
+    }
   }
 }
 
@@ -295,7 +303,13 @@ export function initFirestoreSync() {
         window.dispatchEvent(new CustomEvent('geofence_clock_in_event', { detail: newRecordEventDetail }));
       }
       window.dispatchEvent(new Event('geofence_storage_update'));
-    }, (err) => console.warn('Firestore records listener:', err));
+    }, (err: any) => {
+      if (err?.code === 'permission-denied' || err?.message?.includes('insufficient permissions')) {
+        handleFirestoreError(err, OperationType.LIST, 'records');
+      } else {
+        console.warn('Firestore records listener:', err);
+      }
+    });
   } catch (e) {
     console.warn('Failed to start records listener:', e);
   }
@@ -322,7 +336,13 @@ export function initFirestoreSync() {
       });
 
       window.dispatchEvent(new Event('geofence_storage_update'));
-    }, (err) => console.warn('Firestore employees listener:', err));
+    }, (err: any) => {
+      if (err?.code === 'permission-denied' || err?.message?.includes('insufficient permissions')) {
+        handleFirestoreError(err, OperationType.LIST, 'employees');
+      } else {
+        console.warn('Firestore employees listener:', err);
+      }
+    });
   } catch (e) {
     console.warn('Failed to start employees listener:', e);
   }
@@ -350,7 +370,13 @@ export function initFirestoreSync() {
         window.dispatchEvent(new Event('geofence_departments_update'));
         window.dispatchEvent(new Event('geofence_storage_update'));
       }
-    }, (err) => console.warn('Firestore departments listener:', err));
+    }, (err: any) => {
+      if (err?.code === 'permission-denied' || err?.message?.includes('insufficient permissions')) {
+        handleFirestoreError(err, OperationType.LIST, 'departments');
+      } else {
+        console.warn('Firestore departments listener:', err);
+      }
+    });
   } catch (e) {
     console.warn('Failed to start departments listener:', e);
   }
@@ -374,7 +400,13 @@ export function initFirestoreSync() {
       });
 
       window.dispatchEvent(new Event('geofence_storage_update'));
-    }, (err) => console.warn('Firestore geofences listener:', err));
+    }, (err: any) => {
+      if (err?.code === 'permission-denied' || err?.message?.includes('insufficient permissions')) {
+        handleFirestoreError(err, OperationType.LIST, 'geofences');
+      } else {
+        console.warn('Firestore geofences listener:', err);
+      }
+    });
   } catch (e) {
     console.warn('Failed to start geofences listener:', e);
   }
@@ -397,7 +429,13 @@ export function initFirestoreSync() {
       });
 
       window.dispatchEvent(new Event('geofence_storage_update'));
-    }, (err) => console.warn('Firestore workReports listener:', err));
+    }, (err: any) => {
+      if (err?.code === 'permission-denied' || err?.message?.includes('insufficient permissions')) {
+        handleFirestoreError(err, OperationType.LIST, 'workReports');
+      } else {
+        console.warn('Firestore workReports listener:', err);
+      }
+    });
   } catch (e) {
     console.warn('Failed to start workReports listener:', e);
   }
@@ -422,7 +460,13 @@ export function initFirestoreSync() {
 
       window.dispatchEvent(new Event('geofence_meetings_update'));
       window.dispatchEvent(new Event('geofence_storage_update'));
-    }, (err) => console.warn('Firestore meetings listener:', err));
+    }, (err: any) => {
+      if (err?.code === 'permission-denied' || err?.message?.includes('insufficient permissions')) {
+        handleFirestoreError(err, OperationType.LIST, 'meetings');
+      } else {
+        console.warn('Firestore meetings listener:', err);
+      }
+    });
   } catch (e) {
     console.warn('Failed to start meetings listener:', e);
   }
@@ -443,7 +487,13 @@ export function initFirestoreSync() {
       });
 
       window.dispatchEvent(new Event('geofence_storage_update'));
-    }, (err) => console.warn('Firestore privilegeRequests listener:', err));
+    }, (err: any) => {
+      if (err?.code === 'permission-denied' || err?.message?.includes('insufficient permissions')) {
+        handleFirestoreError(err, OperationType.LIST, 'privilegeRequests');
+      } else {
+        console.warn('Firestore privilegeRequests listener:', err);
+      }
+    });
   } catch (e) {
     console.warn('Failed to start privilegeRequests listener:', e);
   }
